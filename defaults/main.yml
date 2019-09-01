@@ -1,0 +1,11 @@
+---
+
+mysql_server_root_password: ""
+
+mysql_server_databases: []
+#  - testdb
+
+mysql_server_users: []
+#  - username: testuser
+#    password: supersecretpassword
+#    priv: '*.*:ALL,GRANT'

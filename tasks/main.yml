@@ -1,0 +1,73 @@
+---
+
+- become: True
+  block:
+  - name: Assert that the passwords are set
+    assert:
+      that:
+        - "mysql_server_root_password != ''"
+
+  - name: Install Mysql Packages
+    yum:
+      name: "{{item}}"
+      state: present
+    with_items:
+      - "mariadb"
+      - "mariadb-server"
+      - "mariadb-libs"
+      - "MySQL-python"
+      - "perl-DBD-MySQL"
+
+  - name: Start and Enable Mariadb-Server
+    service: 
+      name: mariadb
+      enabled: yes
+      state: started
+
+  - name: Check if root password is set
+    shell: >
+      mysqladmin -u root status
+    changed_when: false
+    failed_when: false
+    register: root_pwd_check
+
+  - name: Set mysql root password for the first time (root@localhost)
+    mysql_user:
+      name: root
+      password: "{{ mysql_server_root_password }}"
+      host: localhost
+      login_user: root
+      state: present
+    when: root_pwd_check.rc == 0
+
+  - name: Set mysql root password for 127.0.0.1, ::1
+    mysql_user:
+      name: root
+      password: "{{ mysql_server_root_password }}"
+      host: "{{ item }}"
+      login_user: root
+      login_password: "{{ mysql_server_root_password }}"
+      state: present
+    with_items:
+      - ::1
+      - 127.0.0.1
+    when: root_pwd_check.rc == 0
+
+  - name: Create databases
+    mysql_db:
+      name: "{{ item }}"
+      login_user: root
+      login_password: "{{ mysql_server_root_password }}"
+    with_items: "{{ mysql_server_databases }}"
+
+  - name: Create users
+    mysql_user:
+      name: "{{ item.username }}"
+      login_user: root
+      login_password: "{{ mysql_server_root_password }}"
+      host: 'localhost'
+      password: "{{ item.password }}"
+      priv: "{{ item.priv|default('*.*:ALL,GRANT') }}"
+      state: present
+    with_items: "{{ mysql_server_users }}"
+
