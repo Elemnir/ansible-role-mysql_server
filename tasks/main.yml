@@ -18,6 +18,12 @@
       - "MySQL-python"
       - "perl-DBD-MySQL"
 
+  - name: Render the config
+    template:
+      src: my.cnf.j2
+      dest: /etc/my.cnf
+    notify: Restart mariadb
+
   - name: Start and Enable Mariadb-Server
     service: 
       name: mariadb
@@ -27,6 +33,7 @@
   - name: Check if root password is set
     shell: >
       mysqladmin -u root status
+    check_mode: no
     changed_when: false
     failed_when: false
     register: root_pwd_check
